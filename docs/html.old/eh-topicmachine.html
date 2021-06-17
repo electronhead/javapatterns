@@ -1,0 +1,258 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="Author" content="Gary Beaver">
+   <meta name="GENERATOR" content="Mozilla/4.61 [en] (WinNT; U) [Netscape]">
+   <meta name="Classification" content="programming language, internet">
+   <meta name="Description" content="A Publish&Subscribe mechansim implemented entirely in Java.">
+   <meta name="KeyWords" content="java, publish, subscribe">
+   <title>ElectronHead -- JavaTopicMachine</title>
+</head>
+<body>
+
+<ul>
+<center><a NAME="javatopicmachine"></a><a href="index.html"><img SRC="stamp4.gif" BORDER=0 height=94 width=90></a>
+<br><i><font color="#800000"><font size=+3>Electronhead</font></font></i></center>
+</ul>
+
+<center>
+<hr WIDTH="100%"></center>
+
+<div align=right><i><font color="#800000"><font size=+2>JavaTopicMachine&nbsp;</font></font></i>
+<hr WIDTH="100%"></div>
+
+<h1>
+<font color="#000080">Contents</font></h1>
+
+<ul>
+<li>
+<a href="#introduction">Introduction</a></li>
+
+<li>
+<a href="#topic syntax">Topic Syntax</a></li>
+
+<li>
+<a href="#server operation">Server operation</a></li>
+
+<li>
+<a href="#client programming">Client programming</a></li>
+
+<li>
+<a href="#examples">Examples</a></li>
+
+<li>
+<a href="#project status">Project Status</a></li>
+</ul>
+
+<hr WIDTH="100%">
+<h1>
+<a NAME="introduction"></a><font color="#000080">Introduction</font></h1>
+JavaTopicMachine (JTM) provides a publish/subscribe api supporting subject-based
+communication among two or more Java clients. A JTM server operates as
+the communication hub for a collection of topic clients [typically operating
+in separate JVMs], each of which publishes objects and subscribes to topics
+as necessary. View the <a href="topic/packages.html#_top_">JavaTopicMachine
+api</a> for more details on how client applications interact dynamically.
+<p><i>[JavaTopicMachine is 100% Pure Java 2]</i>
+<div align=right><a href="#javatopicmachine"><img SRC="arrow.gif" BORDER=0 height=20 width=12></a></div>
+
+<hr WIDTH="100%">
+<h1>
+<a NAME="topic syntax"></a><font color="#000080">Topic Syntax</font></h1>
+Topics are represented by strings with embedded periods and wildcard characters
+(* and #).
+<p>Wildcard characters:
+<ul>
+<li>
+* matches any string.</li>
+
+<li>
+# may appear only at the end of a topic string and matches any string including
+periods.</li>
+</ul>
+Examples of valid topic strings:
+<ul>
+<li>
+a.b.c.d.e [matches only a.b.c.d.e]</li>
+
+<li>
+ab.*.d.# [matches ab.qrt.d.a.b and ab.qrt.d, for example]</li>
+
+<li>
+# [matches all topic strings]</li>
+
+<li>
+*.* [matches all topic strings with exactly one period]</li>
+
+<li>
+*.*.# [matches all topic strings with at least one period]</li>
+</ul>
+Examples of ill-formed topic strings:
+<ul>
+<li>
+a.**.b [only one * between periods]</li>
+
+<li>
+a.#.b [# must appear at the end]</li>
+</ul>
+
+<div align=right><a href="#javatopicmachine"><img SRC="arrow.gif" BORDER=0 height=20 width=12></a></div>
+
+<hr WIDTH="100%">
+<h1>
+<a NAME="server operation"></a><font color="#000080">Server operation</font></h1>
+One starts up a topic server by invoking the <tt>TopicServer </tt>class,
+which can be passed an optional port argument. For example, the following
+command line would start a <tt>TopicServer</tt> on port 1234:
+<p><tt>&nbsp;&nbsp;&nbsp; java com.electronhead.topic.TopicServer 1234</tt>
+<p>The helper class, <tt>TopicSender</tt>, lets you publish Java <tt>Strings</tt>
+on a particular topic from a command line window. This class has a syntax
+of &lt;IP address>&lt;port number>&lt;topic string>&lt;optional:string
+object>. For example, to publish the string "Hither and thither" to the
+topic, "our.destination", to the <tt>TopicServer</tt> running from port
+1234 on machine 192.44.1.1, one would invoke the following command line:
+<p><tt>&nbsp;&nbsp;&nbsp; java com.electronhead.topic.TopicSender 192.44.1.1
+1234 our.destination "Hither and thither"</tt>
+<p>&nbsp;Communication with a server amounts to publishing to pre-established
+topics that pertain to various server operations. For example, to stop
+the above <tt>TopicServer</tt> on a machine with IP address 192.44.1.1,
+one would invoke the class, <tt>TopicSender</tt>, with command line arguments
+as follows:
+<p><tt>&nbsp;&nbsp;&nbsp; java com.electronhead.topic.TopicSender 192.44.1.1
+1234 topic.exit</tt>
+<br>&nbsp;
+<div align=right><a href="#javatopicmachine"><img SRC="arrow.gif" BORDER=0 height=20 width=12></a></div>
+
+<hr WIDTH="100%">
+<br><a NAME="client programming"></a><b><font color="#000080"><font size=+3>Client
+programming</font></font></b>
+<br>A Java client establishes a connection with a <tt>TopicServer</tt>
+by first creating a <tt>TopicClient</tt> and invoking the <tt>startClient</tt>
+method::
+<p><tt>&nbsp;&nbsp;&nbsp; TopicClient topicClient = new TopicClient ("192.44.1.1",
+1234);</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; topicClient.startClient ();</tt>
+<p>The Java client then can invoke publish and subscribe methods as necessary.
+The primary operations are as follows:
+<ul>
+<li>
+<tt>subscribe (String, TopicListener)</tt></li>
+
+<ul>
+<li>
+Submits a topic string in the format described above to the server and
+a locally adds a listener which responds to any object published with a
+topic string matching the submitted topic.</li>
+</ul>
+
+<li>
+<tt>coSubscribe (String, TopicListener)</tt></li>
+
+<ul>
+<li>
+Works the same as subscribe, except that co-subscription enables a subscriber
+to share the responsibility of responding to a topic with another co-subscriber.</li>
+
+<li>
+Only one among a set of co-subscribers will respond to a given published
+message on the co-subscribed topic.</li>
+
+<li>
+Note that a subscriber to a topic will always respond to the topic, independent
+of the number of co-subscribers.</li>
+</ul>
+
+<li>
+<tt>unsubscribe (String, TopicListener)</tt></li>
+
+<ul>
+<li>
+Tells the server to delete the subscription to the topic string and removes
+the TopicListener from the local list of listeners.</li>
+</ul>
+
+<li>
+<tt>publish (String, Object, String)</tt></li>
+
+<ul>
+<li>
+Publishes an object on a fully-qualified string (no * or # characters)
+with a reply topic string used by the server for a return address.</li>
+</ul>
+
+<li>
+<tt>request (String, Object, TopicListener)</tt></li>
+
+<ul>
+<li>
+Combines a publish and subscribe in one fell swoop, publishing the object
+on a topic string with the supplied listener and a system-generated reply
+topic.</li>
+</ul>
+</ul>
+See the <a href="topic/packages.html#_top_">JavaTopicMachine api</a> for
+more details.
+<p>Finally, to stop the TopicClient, the Java client invokes the <tt>stopClient</tt>
+method.
+<p><tt>&nbsp;&nbsp;&nbsp; topicClient.stopClient ();</tt>
+<div align=right><a href="#javatopicmachine"><img SRC="arrow.gif" BORDER=0 height=20 width=12></a></div>
+
+<hr WIDTH="100%">
+<h1>
+<a NAME="examples"></a><font color="#000080">Examples</font></h1>
+To publish the topic, "quote of the moment", a Java client would first
+create a TopicClient and then could run the following code:
+<p><tt>&nbsp;&nbsp;&nbsp; topicClient = ...;</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; ...</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; while (true) topicClient.publish ("quote.of.the.moment",
+getNextQuote ());</tt>
+<p>To subscribe to the topic, "quote.of.the.moment", another Java client
+could invoke the following code:
+<p><tt>&nbsp;&nbsp;&nbsp; topicClient = ...;</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; ...</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; topicClient.subscribe ("quote.of.the.moment",
+new TopicListener () {</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void onData (String
+topic, Object quote, String replyTopic) {</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+System.out.println ("The quote of the moment is " + quote);</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; }</tt>
+<p>In this example, whenever an object is published on the topic, "quote.of.the.moment",
+the object will print out on every Java client that has subscribed to this
+topic.
+<p>To subscribe to all quote topics, a Java client could invoke the following
+code:
+<br>&nbsp;<tt>&nbsp;&nbsp;&nbsp; topicClient = ...;</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; ...</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; topicClient.subscribe ("quote.#", new TopicListener
+() {</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void onData (String
+topic, Object quote, String replyTopic) {</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+System.out.println ("The " + topic + " is " + quote);</tt>
+<br><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; }</tt>
+<p>In this example, the topics "quote.of.the.year", "quote.of.the.last.year",
+and "quote", will trigger the topic listener subscribed to "topic.#".
+<br>&nbsp;
+<div align=right><a href="#javatopicmachine"><img SRC="arrow.gif" BORDER=0 height=20 width=12></a></div>
+
+<hr WIDTH="100%">
+<h1>
+<a NAME="project status"></a><font color="#000080">Project Status</font></h1>
+JavaTopicMachine provides the communication infrastructure for <a href="index.html#JavaObjectMachine">JavaObjectMachine</a>.
+<div align=right><a href="#javatopicmachine"><img SRC="arrow.gif" BORDER=0 height=20 width=12></a></div>
+
+<div align=right>
+<hr WIDTH="100%"></div>
+
+<div align=right><i><font color="#800000"><a href="index.html">Home Page</a></font></i>
+<hr WIDTH="100%"></div>
+Electronhead is interested in your comments. Please send e-mail to <font color="#800000"><a href="mailto:beaver@electronhead.com">beaver@electronhead.com.</a></font>
+<p>Copyright 1996-1999 by Gary Beaver
+<center><a href="index.html"><img SRC="stamp4.gif" BORDER=0 height=94 width=90></a></center>
+
+</body>
+</html>

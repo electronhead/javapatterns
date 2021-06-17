@@ -1,0 +1,177 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="Author" content="Gary Beaver">
+   <meta name="GENERATOR" content="Mozilla/4.61 [en] (WinNT; U) [Netscape]">
+   <meta name="Classification" content="programming language, internet">
+   <meta name="Description" content="A dynamic dispatch mechanism for Java under development at ElectronHead.">
+   <meta name="KeyWords" content="java, dynamic dispatch">
+   <title>ElectronHead -- JavaPatternDispatch</title>
+</head>
+<body>
+
+<ul>
+<center><a NAME="java pattern lookup"></a><a href="index.html"><img SRC="stamp4.gif" BORDER=0 height=94 width=90></a>
+<br><i><font color="#800000"><font size=+3>Electronhead</font></font></i></center>
+
+<br>&nbsp;</ul>
+
+<div align=right>
+<hr WIDTH="100%"></div>
+
+<div align=right><i><font color="#800000"><font size=+2>JavaPatternLookup&nbsp;</font></font></i>
+<hr WIDTH="100%"></div>
+
+<h2>
+<font color="#000080"><font size=+2>Introduction</font></font></h2>
+This page introduces the <a href="patterns/packages.html#_top_">JavaPatternLookup
+(JPL) api</a>, a collection of classes that enables Java programs to dynamically
+access [in-memory] data and invoke methods using rule-based data patterns.You
+define these data patterns in terms of the classes and objects of your
+application. Dynamic access is provided without any pre- or post-processing
+of source or class files.
+<p>Inspirations for JPL include the multi-method dispatch policies of the
+Common Lisp Object System (CLOS) and the Lisp derivative, Dylan. If you
+are familiar with either CLOS, Dylan, or any other language that supports
+run-time method resolution based on the actual (vs. formal) types of all
+(vs. some) parameters, then you will already be somewhat familiar with
+the concepts presented here. For Java programmers, the corresponding analog
+would be if the part of method dispatch policy involving run-time types
+were extended to include all objects in the method's parameter list instead
+of just the run-time type of the receiving object.
+<p>JPL implements the dynamic selection policies of the above-mentioned
+languages and extends them by using logical implication instead of type-resolution.
+Logical implication provides more flexibility when defining patterns. Furthermore,
+JPL's implementation of logical implication enables the developer to define
+additional types of rules that participate in logical implication.
+<p>When you are creating software that must in some way dynamically react
+to patterns of information, JPL can provide the means to organize and execute
+your application's responses.
+<br>&nbsp;
+<div align=right><a href="#java pattern lookup"><img SRC="arrow.gif" BORDER=0 height=20 width=12></a></div>
+
+<hr WIDTH="100%">
+<h2>
+<a NAME="class hierarchy"></a><font color="#000066">JPL Class Hierarchy
+and API</font></h2>
+The root class of the <a href="patterns/packages.html#_top_">api</a> is
+PatternDAG, from which the main classes in JPL derive as follows:
+<p><tt>java.lang.Object</tt>
+<ul><tt><a href="patterns/com/electronhead/patterns/PatternDAG.html#navbar_top">PatternDAG</a></tt></ul>
+
+<ul>
+<ul><tt><a href="patterns/com/electronhead/patterns/PatternTree.html#navbar_top">PatternTree</a></tt></ul>
+</ul>
+
+<ul>
+<ul>
+<ul><tt><a href="patterns/com/electronhead/dispatch/PatternDispatcher.html#navbar_top">PatternDispatcher</a></tt></ul>
+</ul>
+</ul>
+
+<div align=right><a href="#java pattern lookup"><img SRC="arrow.gif" BORDER=0 height=20 width=12></a></div>
+
+<hr WIDTH="100%">
+<h2>
+<a NAME="familiar starting point"></a><font color="#000066">A Starting
+Point</font></h2>
+To get an idea of how a PatternDAG works, consider the familiar data structure
+implemented in the Java class, <tt>java.util.Hashtable</tt>. Hashtables
+let you store and access an object, the <i>value</i>, based on the value
+of another object, the <i>key</i>. To associate a key object, <tt>k</tt>,
+with a value object, <tt>v</tt>, using the Hashtable, <tt>h</tt>, you apply
+<tt>Hashtable</tt>'s
+put method as follows:&nbsp; <tt>h.put (k, v)</tt>. To access the value
+associated with <tt>k</tt>, you apply the get method as follows: <tt>h.get
+(k)</tt>.
+<p><tt>K k = new K();</tt>
+<br><tt>V v = new V();</tt>
+<br><tt>Hashtable h = new Hashtable();</tt>
+<br><tt>h.put(k,v);</tt>
+<br><tt>V v2 = (V)h.get(k);</tt>
+<br><tt>v == v2 // returns true</tt>
+<p>Now suppose that you requre more flexibility in specifying the key part
+of the Hashtable. Let's say that you need to retrieve V, except that you
+would rather base the value lookup on the class of the key instead of the
+key itself -- similar to how methods are selected polymorphically for execution
+in Java and in other languages. Hashtables would not fit the bill; <tt>h.put
+(K.class, v)</tt> would not result in the desired access using <tt>k</tt>
+or other instances of <tt>K</tt> as keys later on.
+<p>To achieve this sort of functionality, one can use a PatternTree, a
+sub-class of PatternDAG. The following code illustrates the point:
+<p><tt>PatternTree pt = new PatternTree (new RuleProxy[]{XT.x});</tt>
+<br><tt>pt.put (new Rule[]{XT.<u>of</u>(K.class)},v);</tt>
+<br><tt>V v2 = (V)pt.get(new Object[]{k});</tt>
+<br><tt>K k2 = new K();</tt>
+<br><tt>V v3 = (V)pt.get(new Object[]{k2});</tt>
+<p><tt>v == v2 // returns true</tt>
+<br><tt>v2 == v3 // returns true</tt>
+<p>The first line creates a PatternTree using an array of RuleProxy objects.
+The RuleProxy object tells the PatternTree what type of rule can and will
+be used in the RuleProxy's position in a pattern. In this case, the first
+and only element of a pattern can be a rule that corresponds to the XT
+type of rule. <b>[In general, a pattern is defined using an array of rules.]</b>
+<p>The next line of code associates a pattern represented by an array with
+one rule in it, namely, <tt>XT.of (K.class)</tt>, with a value. Taking
+the method name, <tt>of</tt>, as a clue, this rule returns true if the
+corresponding object in a supplied pattern is an instance of <tt>K</tt>.
+<b>[In
+general, a rule takes a value and returns either <tt>true</tt> or
+<tt>false.]</tt></b>
+<p>The next line of code selects the value in <tt>pt</tt> corresponding
+to the pattern, <tt>new Object [] {k}</tt>. Since <tt>k</tt> is an instance
+of <tt>K</tt>, the value returned, as in the case of the following lines,
+is <tt>v</tt>.
+<p>Let's now say that you need also to select values based on key equality
+(as in the Hashtable example) in addition to selection based on class membership.
+In terms of the above example, the following code illustrates how to select
+<tt>v4</tt>
+based on <tt>k3</tt>, a particular instance of <tt>K</tt>, and select <tt>v</tt>
+for other all other instances of <tt>K</tt>.
+<p><tt>K k3 = new K();</tt>
+<br><tt>V v4 = new V();</tt>
+<br><tt>pt.put (new Rule[]{XT.<u>is</u>(k3)},v4);</tt>
+<p><tt>v == (V)pt.get(new Object[]{k}) // returns true</tt>
+<br><tt>v == (V)pt.get(new Object[]{new K()}) // returns true</tt>
+<br><tt>v4 == (V)pt.get(new Object[]{k3}) // returns true</tt>
+<p>Why did <tt>pt.get(...)</tt> return <tt>v4</tt> in the last line above?
+<p>Before answering, first note that because XT.x is the RuleProxy of interest,
+JPL views the pattern defined by <tt>new Object [] {k}</tt> as a short-hand
+equivalent to the pattern defined by <tt>new Rule [] {XT.is (k)}</tt>.
+JPL actually deals with rules and not values; values are transformed into
+their corresponding RuleProxy's <i>instance rule</i>.
+<p>As you may recall from the introduction, pattern matching uses logical
+implication among rules to determine which value to select. <b>[A rule
+M&nbsp; implies another rule N if and only if for every value of v where
+M(v) == true, then N(v) == true.]</b>
+<p>From the example we have two possible candidates: the rule involving
+the "of" method and the rule involving the "is" method. In general, <b>JPL
+will pick the least general rule among all rules in the PatternTree which
+are implied by the incoming pattern</b>. The least general rule for a pattern
+is the rule that [1] is implied by the supplied pattern's equivalent rule
+and [2] is not implied by any other rule in the PatternTree (and hence
+least).
+<p>So because [a] <tt>k3</tt>'s corresponding instance rule is <tt>XT.is(k3)</tt>,
+[b] any rule implies itself, and [c] <tt>XT.of(K.class)</tt> does not imply
+<tt>XT.is(k3)</tt>,
+the result is <tt>v4</tt> and not <tt>v</tt>.
+<p>The above PatternTree uses a rule list of length one, just as there
+is one key element used in looking up Hashtable values. But more likely
+than not, you will define PatternDAGs using rules lists of length greater
+than one. In addition, you will define rules involving the Java class/sub-class
+hierarchy and choose from different rule types.
+<br>&nbsp;
+<div align=right><a href="#java pattern lookup"><img SRC="arrow.gif" BORDER=0 height=20 width=12></a></div>
+
+<div align=right>
+<hr WIDTH="100%"></div>
+
+<div align=right><i><font color="#800000"><a href="index.html">Home Page</a></font></i>
+<hr WIDTH="100%"></div>
+Electronhead is interested in your comments. Please send e-mail to <font color="#800000"><a href="mailto:beaver@electronhead.com">beaver@electronhead.com.</a></font>
+<p>Copyright 1996-1999 by Gary Beaver
+<center><a href="index.html"><img SRC="stamp4.gif" BORDER=0 height=94 width=90></a></center>
+
+</body>
+</html>
